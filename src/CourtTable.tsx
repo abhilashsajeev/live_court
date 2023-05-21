@@ -1,5 +1,6 @@
-import axios from "axios";
+import { fetch } from "@tauri-apps/api/http";
 import dayjs from "dayjs";
+import { getVersion } from "@tauri-apps/api/app";
 import Pocketbase from "pocketbase";
 import { Fragment, useCallback, useEffect, useState } from "react";
 import {
@@ -24,24 +25,39 @@ const CourtTable = () => {
   const [time, setTime] = useState<string>("10:00 AM");
   const [courtNews, setCourtNews] = useState<string>("");
   const [associationNews, setAssociationNews] = useState<string>("");
+  const [isActingCJ, setIsActingCJ] = useState<boolean>(false);
   useEffect(() => {
     (async () => {
       try {
         const response: any = await getAllCourts();
+
         const result = response.data;
         const id = response.id;
+        const actingresponse: any = await fetch(
+          "https://ecourts.kerala.gov.in/mobileapp/api/v1/fetch/is_acting_cj",
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        console.log("actingresponse", actingresponse);
+
+        setIsActingCJ(actingresponse.data.acting);
         pb.collection("court").subscribe(id, (e: any) => {
           let tempdata = e.record.room_item;
           let courtNews = e.record.highcourt_news;
           let associationNews = e.record.association_news;
           let CJ = tempdata["1"];
           delete tempdata["1"];
-          tempdata["CJ"] = CJ;
+          if (isActingCJ) tempdata["ACJ"] = CJ;
+          else tempdata["CJ"] = "CJ";
           let keyList = Object.keys(tempdata);
           // sort the keys and move CJ to first
           keyList.sort((a, b) => {
-            if (a === "CJ") return -1;
-            if (b === "CJ") return 1;
+            if (a === "CJ" || a === "ACJ") return -1;
+            if (b === "CJ" || b === "ACJ") return 1;
             return a.localeCompare(b);
           });
           let chunkedArray: any = [];
@@ -70,8 +86,8 @@ const CourtTable = () => {
         let keyList = Object.keys(result);
         // sort the keys and move CJ to first
         keyList.sort((a, b) => {
-          if (a === "CJ") return -1;
-          if (b === "CJ") return 1;
+          if (a === "CJ" || a === "ACJ") return -1;
+          if (b === "CJ" || b === "ACJ") return 1;
           return a.localeCompare(b);
         });
 
@@ -88,8 +104,6 @@ const CourtTable = () => {
               chunkedArray[i][j] = keyList[i + j * numOfRows];
             }
           }
-
-          console.log("chunkedArray------->", chunkedArray);
 
           setChunkedArray(chunkedArray);
 

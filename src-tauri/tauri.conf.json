@@ -16,6 +16,16 @@
       "shell": {
         "all": false,
         "open": true
+      },
+      "app": {
+        "all": true,
+        "show": true,
+        "hide": true
+      },
+      "http": {
+        "all": true,
+        "request": true,
+        "scope": ["https://ecourts.kerala.gov.in/*"]
       }
     },
     "bundle": {
